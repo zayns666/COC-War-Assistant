@@ -75,7 +75,6 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import com.example.ai.configureAppCheck
 import com.example.overlay.FloatingOverlayService
 import com.example.ui.components.EsportsGlassPanel
 import com.example.ui.components.GlassStatusPill
