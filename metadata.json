@@ -1,0 +1,6 @@
+{
+  "name": "WarStrat AI",
+  "description": "Asisten overlay taktis Clan War dengan analisis kelemahan base otomatis, simulasi jalur pasukan step-by-step, dan penanda serangan real-time.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

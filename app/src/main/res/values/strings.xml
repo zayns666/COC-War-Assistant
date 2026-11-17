@@ -1,0 +1,14 @@
+<resources>
+    <string name="app_name">WarStrat AI</string>
+    <string name="nav_command_center">Komando</string>
+    <string name="nav_tactical_map">Peta Taktis</string>
+    <string name="nav_war_history">Riwayat</string>
+    <string name="overlay_notification_channel">Layanan Overlay Taktis</string>
+    <string name="overlay_notification_title">WarStrat AI Aktif</string>
+    <string name="overlay_notification_text">Overlay taktis siap memindai base dan menandai jalur serangan.</string>
+    <string name="action_start_overlay">Aktifkan Overlay Mengambang</string>
+    <string name="action_stop_overlay">Matikan Overlay</string>
+    <string name="action_pick_base">Pilih Screenshot Base</string>
+    <string name="action_capture_screen">Tangkap Layar Live</string>
+    <string name="action_test_sample">Uji Analisis Base Contoh</string>
+</resources>

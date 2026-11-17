@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "version": "starter-0.1",
+  "updated_at": "2026-11-17",
+  "source": "bundled-starter-not-verified-meta",
+  "strategies": [
+    {
+      "id": "generic-funnel",
+      "th_min": 7,
+      "th_max": 19,
+      "name": "Funnel then core push",
+      "status": "example-unverified",
+      "guidance": [
+        "Periksa sisi funnel sebelum menurunkan pasukan utama",
+        "Simpan spell sampai pertahanan prioritas teridentifikasi"
+      ]
+    }
+  ]
+}
