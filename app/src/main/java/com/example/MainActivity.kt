@@ -98,7 +98,6 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
 
         // STEP 1: Mandatory App Check configuration before UI or ViewModels
-        configureAppCheck(this, intent)
 
         enableEdgeToEdge()
         setContent {
