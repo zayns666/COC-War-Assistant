@@ -355,18 +355,28 @@ class FloatingOverlayService : Service() {
         val newH = ((height * scale).roundToInt().coerceAtLeast(320)) and 1.inv()
         if (newW == captureWidth && newH == captureHeight) return
 
-        captureWidth = newW
-        captureHeight = newH
+        // Keep the old reader usable unless the new surface is installed successfully.
         val oldReader = imageReader
-        val newReader = ImageReader.newInstance(newW, newH, PixelFormat.RGBA_8888, 2)
-        imageReader = newReader
-        runCatching {
+        val newReader = try {
+            ImageReader.newInstance(newW, newH, PixelFormat.RGBA_8888, 2)
+        } catch (e: Exception) {
+            Log.w(TAG, "Cannot allocate capture reader", e)
+            return
+        }
+        try {
             vd.resize(newW, newH, captureDensity.coerceAtLeast(160))
             vd.surface = newReader.surface
-        }.onFailure { e ->
-            Log.w(TAG, "Failed to resize virtual display", e)
+            imageReader = newReader
+            captureWidth = newW
+            captureHeight = newH
+            oldReader?.close()
+        } catch (e: Exception) {
+            Log.w(TAG, "Capture surface resize failed; restoring previous reader", e)
+            runCatching { if (oldReader != null) vd.surface = oldReader.surface }
+            runCatching { vd.resize(captureWidth, captureHeight, captureDensity.coerceAtLeast(160)) }
+            newReader.close()
+            TacticalStateHolder.setStatusBanner("Rotasi tangkap layar gagal; coba aktifkan ulang capture.")
         }
-        oldReader?.close()
     }
 
     private fun releaseProjectionResources() {
@@ -504,7 +514,8 @@ class FloatingOverlayService : Service() {
                 controlOverlayView?.visibility = View.INVISIBLE
                 delay(220)
 
-                val captured = grabLatestFrameFromPersistentReader()
+                val freshAfterNanos = android.os.SystemClock.elapsedRealtimeNanos()
+                val captured = grabLatestFrameFromPersistentReader(freshAfterNanos)
                 canvasOverlayView?.visibility = View.VISIBLE
                 controlOverlayView?.visibility = View.VISIBLE
 
@@ -516,6 +527,7 @@ class FloatingOverlayService : Service() {
                 }
 
                 TacticalStateHolder.setActiveBitmap(captured)
+                TacticalStateHolder.setStatusBanner("Screenshot baru berhasil diambil. Analisis lokal belum tersedia.")
                 TacticalStateHolder.setAnalysisState(AnalysisUiState.Loading)
 
                 val result = aiRepository.analyzeBase(captured)
@@ -535,15 +547,20 @@ class FloatingOverlayService : Service() {
         }
     }
 
-    private suspend fun grabLatestFrameFromPersistentReader(): Bitmap? {
+    private suspend fun grabLatestFrameFromPersistentReader(freshAfterNanos: Long): Bitmap? {
         val reader = imageReader ?: return null
         val w = captureWidth
         val h = captureHeight
         if (w <= 0 || h <= 0) return null
 
-        repeat(4) { attempt ->
+        repeat(12) { attempt ->
             val image = runCatching { reader.acquireLatestImage() }.getOrNull()
             if (image != null) {
+                if (image.timestamp <= 0L || image.timestamp < freshAfterNanos) {
+                    image.close()
+                    delay(80)
+                    return@repeat
+                }
                 return image.use { img ->
                     val plane = img.planes[0]
                     val buffer = plane.buffer
@@ -561,7 +578,7 @@ class FloatingOverlayService : Service() {
                     cropped
                 }
             }
-            if (attempt < 3) delay(120)
+            if (attempt < 11) delay(80)
         }
         return null
     }

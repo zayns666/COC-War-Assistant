@@ -121,10 +121,10 @@ class WarViewModel(application: Application) : AndroidViewModel(application) {
         } catch (e: CancellationException) {
             throw e
         } catch (e: Exception) {
-            Log.e(TAG, "Gemini AI base analysis failed", e)
+            Log.e(TAG, "Base analysis unavailable", e)
             TacticalStateHolder.setAnalysisState(
                 AnalysisUiState.Error(
-                    e.localizedMessage ?: "Analisis Gemini AI gagal. Periksa koneksi & App Check."
+                    e.localizedMessage ?: "Analisis otomatis belum tersedia. Gunakan penanda manual."
                 )
             )
         }

@@ -19,8 +19,12 @@ class MetaUpdater(private val context: Context) {
 
     suspend fun refresh(feedUrl: String): Result<JSONObject> = withContext(Dispatchers.IO) {
         runCatching {
-            require(feedUrl.startsWith("https://")) { "HTTPS required" }
-            val conn = (URL(feedUrl).openConnection() as HttpURLConnection).apply {
+            val parsedUrl = URL(feedUrl)
+            require(parsedUrl.protocol == "https" && parsedUrl.userInfo == null && parsedUrl.port == -1 && parsedUrl.ref == null) { "Standard HTTPS URL required" }
+            val host = parsedUrl.host.lowercase(java.util.Locale.ROOT)
+            require(host == "raw.githubusercontent.com") { "Untrusted meta feed host" }
+            require(parsedUrl.path.startsWith("/zayns666/COC-War-Assistant/")) { "Untrusted meta feed path" }
+            val conn = (parsedUrl.openConnection() as HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 8000
                 instanceFollowRedirects = false
@@ -33,7 +37,7 @@ class MetaUpdater(private val context: Context) {
                 require(bytes.size <= 512_000) { "Feed too large" }
                 val payload = JSONObject(String(bytes, Charsets.UTF_8))
                 require(payload.optInt("schema") == 1) { "Unsupported schema" }
-                require(payload.optJSONArray("strategies") != null) { "Missing strategies" }
+                MetaFeedValidator.validate(payload)
                 prefs.edit().putString("payload", payload.toString()).putLong("last_sync", System.currentTimeMillis()).apply()
                 payload
             } finally { conn.disconnect() }
