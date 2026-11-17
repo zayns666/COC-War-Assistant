@@ -90,6 +90,7 @@ import androidx.lifecycle.setViewTreeViewModelStoreOwner
 import androidx.savedstate.setViewTreeSavedStateRegistryOwner
 import com.example.MainActivity
 import com.example.R
+import com.example.voice.VoiceCommander
 import com.example.ai.BaseAnalysisRepository
 import com.example.model.AnalysisUiState
 import com.example.model.MarkerType
@@ -159,6 +160,7 @@ class FloatingOverlayService : Service() {
 
     private val serviceScope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val aiRepository = BaseAnalysisRepository()
+    private val voiceCommander by lazy { VoiceCommander(applicationContext) }
     private val mainHandler = Handler(Looper.getMainLooper())
 
     private lateinit var windowManager: WindowManager
@@ -444,6 +446,7 @@ class FloatingOverlayService : Service() {
                             runCatching { windowManager.updateViewLayout(this, ctrlParams) }
                         },
                         onScanScreen = { captureAndAnalyzeScreen() },
+                        onVoiceHint = { voiceCommander.speak("Mode panduan manual aktif. Periksa Town Hall, Clan Castle, pertahanan udara dan jalur masuk. Tandai target sebelum menyerang.") },
                         onOpenApp = {
                             val launch = Intent(this@FloatingOverlayService, MainActivity::class.java).apply {
                                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
@@ -564,6 +567,8 @@ class FloatingOverlayService : Service() {
     }
 
     override fun onDestroy() {
+        if (::windowManager.isInitialized) { /* HUD teardown continues below */ }
+        voiceCommander.shutdown()
         TacticalStateHolder.setOverlayRunning(false)
         TacticalStateHolder.setHasMediaProjection(false)
         canvasOverlayView?.let { runCatching { windowManager.removeView(it) } }
@@ -683,10 +688,11 @@ private fun OverlayTacticalCanvasLayer() {
 private fun FloatingHudController(
     onDrag: (Float, Float) -> Unit,
     onScanScreen: () -> Unit,
+    onVoiceHint: () -> Unit,
     onOpenApp: () -> Unit,
     onCloseOverlay: () -> Unit
 ) {
-    var expanded by remember { mutableStateOf(true) }
+    var expanded by remember { mutableStateOf(false) }
     val analysisState by TacticalStateHolder.analysisState.collectAsStateWithLifecycle()
     val activeStepIndex by TacticalStateHolder.activeStepIndex.collectAsStateWithLifecycle()
     val isSimulating by TacticalStateHolder.isSimulating.collectAsStateWithLifecycle()
@@ -876,6 +882,17 @@ private fun FloatingHudController(
                             )
                         }
                     }
+
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        text = "🔊 Dengar panduan manual",
+                        color = CyberCyan,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier
+                            .clip(CircleShape)
+                            .clickable(onClick = onVoiceHint)
+                            .padding(horizontal = 10.dp, vertical = 7.dp)
+                    )
 
                     // Floating Pill Marker Tools
                     if (isDrawingMode) {
